@@ -53,6 +53,23 @@ pipeline {
                 }
             }
         }
+	stage('Deploy to Production') {
+            steps {
+                script {
+                    echo 'Deploying to Production Server...'
+                    def prodIp = '172.31.6.189' // החלף ב-IP של שרת הפרודקשן
+                    
+                    // שימוש ב-SSH כדי להריץ פקודות מרחוק
+                    // 1. עצירת הקונטיינר הישן (מתעלם משגיאה אם הוא לא קיים בזכות || true)
+                    sh "ssh -o StrictHostKeyChecking=no ubuntu@${prodIp} 'docker stop $APP_NAME || true'"
+                    sh "ssh -o StrictHostKeyChecking=no ubuntu@${prodIp} 'docker rm $APP_NAME || true'"
+                    
+                    // 2. משיכת הגרסה החדשה והרצה
+                    // אנו מריצים בפורט 5000 וממפים אותו ל-5000
+                    sh "ssh -o StrictHostKeyChecking=no ubuntu@${prodIp} 'docker run -d --name $APP_NAME -p 5000:5000 $DOCKERHUB_USERNAME/$APP_NAME:$IMAGE_TAG'"
+                }
+            }
+        }
     }
     
     post {
